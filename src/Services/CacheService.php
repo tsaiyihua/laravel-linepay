@@ -30,7 +30,7 @@ class CacheService
         if (empty($this->cacheKey)) {
             throw new LinePayException('Cache key must be set first');
         }
-        Cache::put($this->cacheKey, $data, $this->aliveTime);
+        Cache::put($this->cacheKey, $data, now()->addSeconds($this->aliveTime));
     }
 
     /**
