@@ -55,7 +55,7 @@ trait LinePayTrait
         ]);
         $response = $client->request($this->requestMethod, $this->requestUri, [
             'headers' => $this->headers,
-            'json' => $this->postData->toArray()
+            'json' => $this->postData->all()
         ]);
         $res = $this->parseResponse((string)$response->getBody());
         /**
