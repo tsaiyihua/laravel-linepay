@@ -5,8 +5,13 @@ Laravel LinePay 為串接Line Pay的非官方套件
 目前只有一般付款後自動請款的動作可以執行，建議只有在手機環境下才出現 LinePay 的付款方法。
 
 ## 系統需求
- - PHP >= 7
- - Laravel >= 5.7
+- v2.x
+     - PHP >= 7.2
+     - Laravel >= 6.0
+     
+- v1.x
+     - PHP >= 7
+     - Laravel >= 5.7 < 6.0
  
  ## 安裝
  ```composer require tsaiyihua/laravel-linepay```
