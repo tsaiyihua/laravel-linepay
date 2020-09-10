@@ -21,6 +21,11 @@ class Reserve extends LinePayAbstract
     {
         parent::__construct();
         $this->requestMethod = 'post';
+        if (config('app.env') === 'production') {
+            $this->requestUri = 'https://api-pay.line.me'.$this->requestUri;
+        } else {
+            $this->requestUri = 'https://sandbox-api-pay.line.me/'.$this->requestUri;
+        }
         $this->cacheSrv = $cacheSrv;
     }
 

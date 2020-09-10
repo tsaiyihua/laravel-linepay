@@ -30,15 +30,37 @@ Laravel LinePay 為串接Line Pay的非官方套件
  Line Pay 的付款流程一定要先準備(reserve)，之後再確認付款後(confirm)才能完成整個付款。
  ### Reserve
  ```php
-$postData = [
-    'orderId' => 'O1234567890',
-    'productName' => 'Item Name',
-    'productImageUrl' => '{ProductImageUrl}',
-    'amount' => 500,
-    'confirmUrl' => $confirmURL,
-    'confirmUrlType' => ConfirmUrlType::WEB
-];
-return $this->linePayReserve->setPostData($postData)->chat()->reserve();
+<?php
+namespace App\Http\Controllers;
+
+use TsaiYiHua\LinePay\Constants\ConfirmUrlType;
+use TsaiYiHua\LinePay\Reserve;
+use TsaiYiHua\LinePay\Services\StringService;
+
+class LinePayController extends Controller
+{
+    protected $linePayReserve;
+
+    public function __construct(Reserve $linePayReserve)
+    {
+        $this->linePayReserve = $linePayReserve;
+    }
+
+    public function pay()
+    {
+        $orderId = StringService::identifyNumberGenerator('O');
+
+        $postData = [
+            'orderId' => $orderId,
+            'productName' => 'Item Name',
+            'productImageUrl' => 'https://tyh.idv.tw/images/tyhlogo.jpg',
+            'amount' => 50,
+            'confirmUrlType' => ConfirmUrlType::WEB
+        ];
+        return $this->linePayReserve->setPostData($postData)->chat()->reserve();
+    }
+}
+
 ```
 ### Confirm
 Confirm 時會回傳 transactionId 以及 orderId
