@@ -4,7 +4,7 @@
     "type": "library",
     "keywords": ["payment", "line", "linepay", "laravel"],
     "require": {
-        "laravel/framework": "^6|^7|^8",
+        "laravel/framework": "^6|7.30.4|^8.24.0",
         "guzzlehttp/guzzle": "^6.5.5|^7.0.1"
     },
     "license": "MIT",
