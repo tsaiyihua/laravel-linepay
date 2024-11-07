@@ -10,6 +10,7 @@ namespace TsaiYiHua\LinePay;
 
 use GuzzleHttp\Client;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 use TsaiYiHua\LinePay\Exceptions\LinePayException;
 
 trait LinePayTrait
@@ -24,18 +25,27 @@ trait LinePayTrait
     /**
      * @return $this;
      */
-    public function setHeaders()
+    public function setHeaders($signature, $nonce)
     {
         $deviceType = '';
         $this->headers = [
             'Content-Type' => 'application/json',
             'X-LINE-ChannelId' =>  config('linepay.channel-id'),
             'X-LINE-ChannelSecret' => config('linepay.channel-secret'),
+            'X-LINE-Authorization-Nonce' => $nonce,
+            'X-LINE-Authorization' => $signature,
         ];
         if (!empty($deviceType)) {
             $this->headers['X-LINE-MerchantDeviceType'] = $deviceType;
         }
         return $this;
+    }
+
+    public function encrypt(string $uri, string $requestBody, string $nonce): string
+    {
+        $signatureString = config('linepay.channel-secret') . $uri . $requestBody . $nonce;
+        $hash = hash_hmac('sha256', $signatureString, config('linepay.channel-secret'), true);
+        return base64_encode($hash);
     }
 
     /**
@@ -49,7 +59,9 @@ trait LinePayTrait
         $this->postData = $this->postData->filter(function($data){
             return !($data==='');
         });
-        $this->setHeaders();
+        $nonce = Str::uuid()->toString();
+        $signature = $this->encrypt($this->requestUri, json_encode($this->postData), $nonce);
+        $this->setHeaders($signature, $nonce);
         $client = new Client([
             'base_uri' => $this->apiUrl
         ]);

@@ -18,7 +18,7 @@ class Confirm extends LinePayAbstract
 {
     use LinePayTrait;
 
-    protected $requestUri = '/v2/payments/{transactionId}/confirm';
+    protected $requestUri = '/v3/payments/{transactionId}/confirm';
     protected $cacheSrv;
     protected $transCacheKey;
 

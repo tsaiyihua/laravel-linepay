@@ -22,7 +22,7 @@ class Capture extends LinePayAbstract
 {
     use LinePayTrait;
 
-    protected $requestUri = '/v2/payments/authorizations/{transactionId}/capture';
+    protected $requestUri = '/v3/payments/authorizations/{transactionId}/capture';
 
     public function __construct()
     {

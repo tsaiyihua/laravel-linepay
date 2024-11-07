@@ -1,6 +1,7 @@
 <?php
 namespace TsaiYiHua\LinePay;
 
+use Illuminate\Support\Str;
 use TsaiYiHua\LinePay\Constants\ConfirmUrlType;
 use TsaiYiHua\LinePay\Constants\Currency;
 use TsaiYiHua\LinePay\Constants\PayType;
@@ -13,7 +14,7 @@ class Reserve extends LinePayAbstract
 {
     use LinePayTrait;
 
-    protected $requestUri = '/v2/payments/request';
+    protected $requestUri = '/v3/payments/request';
     protected $cacheSrv;
     protected $transCacheKey;
 
@@ -21,11 +22,6 @@ class Reserve extends LinePayAbstract
     {
         parent::__construct();
         $this->requestMethod = 'post';
-        if (config('app.env') === 'production') {
-            $this->requestUri = 'https://api-pay.line.me'.$this->requestUri;
-        } else {
-            $this->requestUri = 'https://sandbox-api-pay.line.me/'.$this->requestUri;
-        }
         $this->cacheSrv = $cacheSrv;
     }
 
@@ -46,24 +42,35 @@ class Reserve extends LinePayAbstract
         $orderId = $data['orderId'] ?? StringService::identifyNumberGenerator('O');
         $this->cacheSrv->setKey($orderId)->setData($data);
         $confirmUrl = route('linepay.confirm');
-        $this->postData->put('productName', $data['productName']);
+        $this->postData->put('packages', [
+            'id' => Str::uuid()->toString(),
+            'amount' => $data['amount'],
+            'products' => [
+                'name' => $data['productName'],
+                'quantity' => $data['quantity'],
+                'price' => $data['price'],
+            ]
+        ]);
         $this->postData->put('amount', $data['amount']);
         $this->postData->put('currency', $data['currency'] ?? Currency::TWD);
-        $this->postData->put('confirmUrl', $data['confirmUrl'] ?? $confirmUrl);
+        $this->postData->put('redirectUrls', [
+            'confirmUrl' => $data['confirmUrl'] ?? $confirmUrl,
+            'confirmType' => ConfirmUrlType::WEB
+        ]);
         $this->postData->put('orderId', $data['orderId'] ?? StringService::identifyNumberGenerator('O'));
 
         /**
          * Optional fields
          */
-        $optionParams = [
-            'productImageUrl' ,'mid', 'oneTimeKey', 'confirmUrlType' ,'checkConfirmUrlBrowser',
-            'cancelUrl', 'packageName', 'deliveryPlacePhone', 'payType', 'langCd', 'capture',
-        ];
-        foreach($optionParams as $param) {
-            if (isset($data[$param])) {
-                $this->postData->put($param, $data[$param]);
-            }
-        }
+//        $optionParams = [
+//            'productImageUrl' ,'mid', 'oneTimeKey', 'confirmUrlType' ,'checkConfirmUrlBrowser',
+//            'cancelUrl', 'packageName', 'deliveryPlacePhone', 'payType', 'langCd', 'capture',
+//        ];
+//        foreach($optionParams as $param) {
+//            if (isset($data[$param])) {
+//                $this->postData->put($param, $data[$param]);
+//            }
+//        }
         return $this;
     }
 
@@ -99,7 +106,7 @@ class Reserve extends LinePayAbstract
 
     public function reserve()
     {
-        if ($this->postData->get('confirmUrlType') == ConfirmUrlType::WEB) {
+        if ($this->postData->get('returnUrls')['confirmUrlType'] == ConfirmUrlType::WEB) {
             return redirect($this->response->paymentUrl->web);
         } else {
             return redirect($this->response->paymentUrl->app);
