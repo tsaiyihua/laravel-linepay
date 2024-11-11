@@ -42,15 +42,16 @@ class Reserve extends LinePayAbstract
         $orderId = $data['orderId'] ?? StringService::identifyNumberGenerator('O');
         $this->cacheSrv->setKey($orderId)->setData($data);
         $confirmUrl = route('linepay.confirm');
-        $this->postData->put('packages', [
-            'id' => Str::uuid()->toString(),
-            'amount' => $data['amount'],
-            'products' => array([
-                'name' => $data['productName'],
-                'quantity' => $data['quantity'],
-                'price' => $data['price'],
-            ])
-        ]);
+//        $this->postData->put('packages', [
+//            'id' => Str::uuid()->toString(),
+//            'amount' => $data['amount'],
+//            'products' => array([
+//                'name' => $data['productName'],
+//                'quantity' => $data['quantity'],
+//                'price' => $data['price'],
+//            ])
+//        ]);
+        $this->postData->put('packages', $data['packages']);
         $this->postData->put('amount', $data['amount']);
         $this->postData->put('currency', $data['currency'] ?? Currency::TWD);
         $this->postData->put('redirectUrls', [
