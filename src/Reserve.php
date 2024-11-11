@@ -52,7 +52,7 @@ class Reserve extends LinePayAbstract
 //            ])
 //        ]);
         $this->postData->put('packages', $data['packages']);
-        $this->postData->put('amount', $data['amount']);
+//        $this->postData->put('amount', $data['amount']);
         $this->postData->put('currency', $data['currency'] ?? Currency::TWD);
         $this->postData->put('redirectUrls', [
             'confirmUrl' => $data['confirmUrl'] ?? $confirmUrl,
