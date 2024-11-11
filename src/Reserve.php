@@ -45,11 +45,11 @@ class Reserve extends LinePayAbstract
         $this->postData->put('packages', [
             'id' => Str::uuid()->toString(),
             'amount' => $data['amount'],
-            'products' => [
+            'products' => array([
                 'name' => $data['productName'],
                 'quantity' => $data['quantity'],
                 'price' => $data['price'],
-            ]
+            ])
         ]);
         $this->postData->put('amount', $data['amount']);
         $this->postData->put('currency', $data['currency'] ?? Currency::TWD);
