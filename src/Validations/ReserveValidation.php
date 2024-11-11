@@ -27,7 +27,7 @@ class ReserveValidation
             'productName' => 'required_without:packages|max:400',
             'productImageUrl' => 'url|max:500',
             'amount' => 'required_without:packages|int',
-            'packages' => 'required_if:productName|array',
+            'packages' => 'required_without:productName|array',
             'packages.*.amount' => 'required_with:packages|numeric|min:1',
             'packages.*.id' => 'required_with:packages|max:50',
             'packages.*.name' => 'max:100',
