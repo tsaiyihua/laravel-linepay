@@ -39,7 +39,7 @@ class Confirm extends LinePayAbstract
         $transData = $this->cacheSrv->setKey($data['orderId'])->getData();
         $transactionId = $data['transactionId'];
         $this->requestUri = str_replace('{transactionId}', $transactionId, $this->requestUri);
-        $this->postData->put('amount', $transData['amount']);
+        $this->postData->put('amount', $transData['packages'][0]['amount']);
         $this->postData->put('currency', $transData['currency'] ?? Currency::TWD);
         return $this;
     }

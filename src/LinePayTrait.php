@@ -75,7 +75,7 @@ trait LinePayTrait
          * 第二次的 Confirm Request 就會出現 1198 的要求處理中的錯誤，而前端網頁有時會先完成有時會慢於 Server-to-Server，於是就會
          * 有時成功有時失敗。。。。。真的是很鳥的設計。。囧。
          */
-        if ($res->returnCode == '0000' || $res->returnCode == '1198') {
+        if ($res->returnCode == '0000' || $res->returnCode == '1198' || $res->returnCode == '1172') {
             if ($res->returnCode == '0000') {
                 $this->response = $res->info;
             }

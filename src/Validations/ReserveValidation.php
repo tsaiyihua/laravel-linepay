@@ -26,9 +26,11 @@ class ReserveValidation
         $validator = Validator::make($data, [
             'productName' => 'required_without:packages|max:400',
             'productImageUrl' => 'url|max:500',
-            'amount' => 'required_without:packages|int',
+            'price' => 'required_with:productName|numeric|min:1',
+            'quantity' => 'required_with:productName|numeric|min:1',
+//            'amount' => 'required_without:packages|int',
             'packages' => 'required_without:productName|array',
-            'packages.*.amount' => 'required_with:packages|numeric|min:1',
+//            'packages.*.amount' => 'required_with:packages|numeric|min:1',
             'packages.*.id' => 'required_with:packages|max:50',
             'packages.*.name' => 'max:100',
             'packages.*.products' =>'required_with:packages|array',
