@@ -10,6 +10,7 @@ namespace TsaiYiHua\LinePay;
 
 use GuzzleHttp\Client;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 use TsaiYiHua\LinePay\Exceptions\LinePayException;
 
 trait LinePayTrait
@@ -24,18 +25,27 @@ trait LinePayTrait
     /**
      * @return $this;
      */
-    public function setHeaders()
+    public function setHeaders($signature, $nonce)
     {
         $deviceType = '';
         $this->headers = [
             'Content-Type' => 'application/json',
             'X-LINE-ChannelId' =>  config('linepay.channel-id'),
             'X-LINE-ChannelSecret' => config('linepay.channel-secret'),
+            'X-LINE-Authorization-Nonce' => $nonce,
+            'X-LINE-Authorization' => $signature,
         ];
         if (!empty($deviceType)) {
             $this->headers['X-LINE-MerchantDeviceType'] = $deviceType;
         }
         return $this;
+    }
+
+    public function encrypt(string $uri, string $requestBody, string $nonce): string
+    {
+        $signatureString = config('linepay.channel-secret') . $uri . $requestBody . $nonce;
+        $hash = hash_hmac('sha256', $signatureString, config('linepay.channel-secret'), true);
+        return base64_encode($hash);
     }
 
     /**
@@ -49,7 +59,9 @@ trait LinePayTrait
         $this->postData = $this->postData->filter(function($data){
             return !($data==='');
         });
-        $this->setHeaders();
+        $nonce = Str::uuid()->toString();
+        $signature = $this->encrypt($this->requestUri, json_encode($this->postData), $nonce);
+        $this->setHeaders($signature, $nonce);
         $client = new Client([
             'base_uri' => $this->apiUrl
         ]);
@@ -63,7 +75,7 @@ trait LinePayTrait
          * 第二次的 Confirm Request 就會出現 1198 的要求處理中的錯誤，而前端網頁有時會先完成有時會慢於 Server-to-Server，於是就會
          * 有時成功有時失敗。。。。。真的是很鳥的設計。。囧。
          */
-        if ($res->returnCode == '0000' || $res->returnCode == '1198') {
+        if ($res->returnCode == '0000' || $res->returnCode == '1198' || $res->returnCode == '1172') {
             if ($res->returnCode == '0000') {
                 $this->response = $res->info;
             }

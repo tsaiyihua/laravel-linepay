@@ -41,6 +41,10 @@ class LinePayController extends Controller
         });
     }
 
+    public function cancelUrl()
+    {
+        return response()->json(['message' => 'cancelled']);
+    }
     /**
      * @param Capture $linePayCapture
      * @param Request $request

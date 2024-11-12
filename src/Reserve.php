@@ -1,6 +1,8 @@
 <?php
 namespace TsaiYiHua\LinePay;
 
+use Illuminate\Support\Str;
+use TsaiYiHua\LinePay\Collections\RequestCollection;
 use TsaiYiHua\LinePay\Constants\ConfirmUrlType;
 use TsaiYiHua\LinePay\Constants\Currency;
 use TsaiYiHua\LinePay\Constants\PayType;
@@ -13,7 +15,7 @@ class Reserve extends LinePayAbstract
 {
     use LinePayTrait;
 
-    protected $requestUri = '/v2/payments/request';
+    protected $requestUri = '/v3/payments/request';
     protected $cacheSrv;
     protected $transCacheKey;
 
@@ -21,11 +23,6 @@ class Reserve extends LinePayAbstract
     {
         parent::__construct();
         $this->requestMethod = 'post';
-        if (config('app.env') === 'production') {
-            $this->requestUri = 'https://api-pay.line.me'.$this->requestUri;
-        } else {
-            $this->requestUri = 'https://sandbox-api-pay.line.me/'.$this->requestUri;
-        }
         $this->cacheSrv = $cacheSrv;
     }
 
@@ -44,26 +41,122 @@ class Reserve extends LinePayAbstract
          * Set required fields
          */
         $orderId = $data['orderId'] ?? StringService::identifyNumberGenerator('O');
-        $this->cacheSrv->setKey($orderId)->setData($data);
         $confirmUrl = route('linepay.confirm');
-        $this->postData->put('productName', $data['productName']);
-        $this->postData->put('amount', $data['amount']);
+        $cancelUrl = route('linepay.cancel');
+        if (isset($data['productName'])) {
+            $packageAmount = $data['price'] * $data['quantity'];
+            $this->postData->put('packages', [
+                'id' => Str::uuid()->toString(),
+                'amount' => $packageAmount,
+                'products' => array([
+                    'name' => $data['productName'],
+                    'quantity' => $data['quantity'],
+                    'price' => $data['price'],
+                    'imageUrl' => $data['productImageUrl']
+                ])
+            ]);
+        } else {
+            $amount = 0;
+            foreach ($data['packages'] as $i => $package) {
+                $productAmount = 0;
+                $packageAmount = 0;
+                foreach ($package['products'] as $product) {
+                    $productAmount += $product['price'] * $product['quantity'];
+                }
+                $userFee = (isset($package['userFee'])) ? $package['userFee'] : 0;
+                $packageAmount += $productAmount + $userFee;
+                $amount += $packageAmount;
+                $data['packages'][$i]['amount'] = $packageAmount;
+            }
+        }
+        $data['amount'] = $amount;
+        $this->cacheSrv->setKey($orderId)->setData($data);
+        $this->postData->put('packages', $data['packages']);
+        $this->postData->put('amount', $amount);
         $this->postData->put('currency', $data['currency'] ?? Currency::TWD);
-        $this->postData->put('confirmUrl', $data['confirmUrl'] ?? $confirmUrl);
+        $this->postData->put('redirectUrls', [
+            'confirmUrl' => $data['confirmUrl'] ?? $confirmUrl,
+            'cancelUrl' => $data['cancelUrl'] ?? $cancelUrl,
+            'confirmUrlType' => $data['confirmUrlType'] ?? ConfirmUrlType::WEB
+        ]);
         $this->postData->put('orderId', $data['orderId'] ?? StringService::identifyNumberGenerator('O'));
-
         /**
          * Optional fields
          */
         $optionParams = [
-            'productImageUrl' ,'mid', 'oneTimeKey', 'confirmUrlType' ,'checkConfirmUrlBrowser',
-            'cancelUrl', 'packageName', 'deliveryPlacePhone', 'payType', 'langCd', 'capture',
+            /** 請求付款時的畫面訊息 */
+            'display' => [
+                'checkConfirmUrlBrowser',
+                'locale'
+            ],
+            /** 合作商店附加訊息 */
+            'extra' => [
+                'branchId',
+                'branchName',
+                /** 點數限制資訊 TW only */
+                'promotionRestriction' => [
+                    'rewardLimit',
+                    'useLimit'
+                ]
+            ],
+            'familyService' => [
+                'addFriends' => array([
+                    'idList' => array([]),
+                    'type'
+                ])
+            ],
+            'payment' => [
+                'capture',
+                'payType'
+            ],
+            /** 配送訊息JP only */
+            'shipping' => [
+                'address' => [
+                    'city',
+                    'country',
+                    'detail',
+                    'optional',
+                    'postalCode',
+                    'recipient' => [
+                        'email',
+                        'firstName',
+                        'firstNameOptional',
+                        'lastName',
+                        'lastNameOptional',
+                        'phoneNo',
+                    ],
+                    'state'
+                ],
+                'feeAmount',
+                'feeInquiryType',
+                'feeInquiryUrl',
+                'type'
+            ]
         ];
-        foreach($optionParams as $param) {
-            if (isset($data[$param])) {
-                $this->postData->put($param, $data[$param]);
+        foreach ($optionParams as $key => $optionSubParams) {
+            if ($key == 'extra') {
+                foreach ($optionSubParams as $key2 => $optionSubParam) {
+                    if ($key2 == 'promotionRestriction') {
+                        foreach ($optionSubParam as $param) {
+                            if (isset($data['options'][$key][$key2][$param])) {
+                                $options = $data['options'][$key][$key2][$param];
+                            }
+                        }
+                    } else {
+                        if (isset($data['options'][$key][$optionSubParam])) {
+                            $options = $data['options'][$key][$optionSubParam];
+                        }
+                    }
+                }
+            } else {
+                foreach ($optionSubParams as $optionSubParam) {
+                    if (isset($data['options'][$key][$optionSubParam])) {
+                        $options[$key][$optionSubParam] = $data['options'][$key][$optionSubParam];
+                    }
+                }
             }
         }
+        if (!empty($options))   $this->postData->put('options', $options);
         return $this;
     }
 
@@ -99,7 +192,7 @@ class Reserve extends LinePayAbstract
 
     public function reserve()
     {
-        if ($this->postData->get('confirmUrlType') == ConfirmUrlType::WEB) {
+        if ($this->postData->get('redirectUrls')['confirmUrlType'] == ConfirmUrlType::WEB) {
             return redirect($this->response->paymentUrl->web);
         } else {
             return redirect($this->response->paymentUrl->app);

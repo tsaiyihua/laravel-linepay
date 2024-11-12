@@ -13,6 +13,7 @@ class ConfirmUrlType
 {
     const MOBILE = 'CLIENT';
     const WEB = 'SERVER';
+    const NONE = 'NONE';
 
     /**
      * @return \Illuminate\Support\Collection
@@ -21,7 +22,8 @@ class ConfirmUrlType
     {
         return collect([
             self::MOBILE,
-            self::WEB
+            self::WEB,
+            self::NONE
         ])->unique();
     }
 }

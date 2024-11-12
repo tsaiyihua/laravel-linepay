@@ -3,9 +3,11 @@ Laravel LinePay 為串接Line Pay的非官方套件
 
 ## 前言
 目前只有一般付款後自動請款的動作可以執行，建議只有在手機環境下才出現 LinePay 的付款方法。
+- v1.x, v2.x 適用 LinePay V2 方法
+- v3.x 適用 LinePay V3 方法
 
 ## 系統需求
-- v2.x
+- v2.x, v3.x
      - PHP >= 7.2
      - Laravel >= 6.0
      
@@ -24,11 +26,13 @@ Laravel LinePay 為串接Line Pay的非官方套件
  LINE_PAY_CHANNEL_SECRET=
  ```
  #### 申請及測試流程說明網址
- ```https://pay.line.me/tw/developers/techsupport/sandbox/testflow?locale=zh_TW```
+ ```https://developers-pay.line.me/zh/sandbox```
  
  ## 用法
  Line Pay 的付款流程一定要先準備(reserve)，之後再確認付款後(confirm)才能完成整個付款。
+ Line pay v3 版本新增 price 及 quantity 為必要欄位。
  ### Reserve
+ #### 單一產品購買
  ```php
 <?php
 namespace App\Http\Controllers;
@@ -54,6 +58,8 @@ class LinePayController extends Controller
             'orderId' => $orderId,
             'productName' => 'Item Name',
             'productImageUrl' => 'https://tyh.idv.tw/images/tyhlogo.jpg',
+            'price' => 50,
+            'quantity' => 1,
             'amount' => 50,
             'confirmUrlType' => ConfirmUrlType::WEB
         ];
